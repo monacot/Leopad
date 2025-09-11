@@ -1,0 +1,32 @@
+# Environment variables (contains secrets)
+.env
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Java build files
+target/
+*.jar
+*.war
+*.class
+
+# Logs
+logs/
+*.log
+
+# Docker
+.dockerignore
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# Spring Boot
+spring-boot-*.log
