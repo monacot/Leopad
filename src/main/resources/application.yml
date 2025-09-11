@@ -1,0 +1,34 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: notepad-app
+  
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/notepad}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: ${SHOW_SQL:false}
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+# SendGrid configuration
+sendgrid:
+  api-key: ${SENDGRID_API_KEY:}
+  from-email: ${FROM_EMAIL:noreply@notepad.com}
+
+# Logging configuration
+logging:
+  level:
+    com.leopad.notepad: ${LOG_LEVEL:INFO}
+    org.springframework.web: ${LOG_LEVEL:INFO}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
