@@ -7,6 +7,8 @@ import com.leopad.notepad.entity.User;
 import com.leopad.notepad.service.EmailService;
 import com.leopad.notepad.service.NoteService;
 import com.leopad.notepad.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -20,6 +22,8 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/notes")
 public class NoteController {
+
+    private static final Logger logger = LoggerFactory.getLogger(NoteController.class);
 
     @Autowired
     private NoteService noteService;
@@ -38,7 +42,9 @@ public class NoteController {
     @GetMapping
     public ResponseEntity<List<NoteResponse>> getAllNotes() {
         User user = getDefaultUser();
+        logger.info("Fetching all notes for user: {}", user.getEmail());
         List<Note> notes = noteService.findAllByUser(user);
+        logger.debug("Found {} notes for user: {}", notes.size(), user.getEmail());
         List<NoteResponse> response = notes.stream()
                 .map(NoteResponse::new)
                 .collect(Collectors.toList());
@@ -60,7 +66,9 @@ public class NoteController {
     @PostMapping
     public ResponseEntity<NoteResponse> createNote(@Valid @RequestBody NoteRequest request) {
         User user = getDefaultUser();
+        logger.info("Creating new note for user: {} with title: '{}'", user.getEmail(), request.getTitle());
         Note note = noteService.createNote(request, user);
+        logger.info("Successfully created note with ID: {} for user: {}", note.getId(), user.getEmail());
         return ResponseEntity.status(HttpStatus.CREATED).body(new NoteResponse(note));
     }
 

@@ -30,5 +30,14 @@ logging:
   level:
     com.leopad.notepad: ${LOG_LEVEL:INFO}
     org.springframework.web: ${LOG_LEVEL:INFO}
+    org.springframework.security: ${LOG_LEVEL:INFO}
+    com.sendgrid: ${LOG_LEVEL:INFO}
+    org.hibernate.SQL: ${SQL_LOG_LEVEL:OFF}
+    org.hibernate.type.descriptor.sql.BasicBinder: ${SQL_LOG_LEVEL:OFF}
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ${LOG_FILE:logs/notepad-app.log}
+    max-size: 10MB
+    max-history: 30
