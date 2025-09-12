@@ -25,6 +25,10 @@ sendgrid:
   api-key: ${SENDGRID_API_KEY:}
   from-email: ${FROM_EMAIL:noreply@notepad.com}
 
+# Firebase configuration
+firebase:
+  service-account-key-b64: ${FIREBASE_SERVICE_ACCOUNT_KEY_B64:}
+
 # Logging configuration
 logging:
   level:
@@ -32,6 +36,7 @@ logging:
     org.springframework.web: ${LOG_LEVEL:INFO}
     org.springframework.security: ${LOG_LEVEL:INFO}
     com.sendgrid: ${LOG_LEVEL:INFO}
+    com.google.firebase: ${LOG_LEVEL:INFO}
     org.hibernate.SQL: ${SQL_LOG_LEVEL:OFF}
     org.hibernate.type.descriptor.sql.BasicBinder: ${SQL_LOG_LEVEL:OFF}
   pattern:
