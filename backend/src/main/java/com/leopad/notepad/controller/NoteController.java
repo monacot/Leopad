@@ -172,7 +172,7 @@ public class NoteController {
     }
 
     @PostMapping("/{id}/send-email")
-    public ResponseEntity<Object> sendNoteByEmail(@PathVariable Long id, @RequestParam String email) {
+    public ResponseEntity<Object> sendNoteByEmail(@PathVariable Long id) {
         try {
             User user = getCurrentUser();
             Optional<Note> noteOpt = noteService.findByIdAndUser(id, user);
@@ -182,16 +182,21 @@ public class NoteController {
             }
             
             Note note = noteOpt.get();
-            emailService.sendNoteByEmail(email, note.getTitle(), note.getContent());
+            String userEmail = user.getEmail();
+            emailService.sendNoteByEmail(userEmail, note.getTitle(), note.getContent());
+            
+            logger.info("Note '{}' (ID: {}) sent successfully to user's email: {}", 
+                       note.getTitle(), note.getId(), userEmail);
             
             return ResponseEntity.ok(new Object() {
-                public final String message = "Note sent successfully to " + email;
+                public final String message = "Note sent successfully to your email address";
                 public final Long noteId = note.getId();
                 public final String noteTitle = note.getTitle();
-                public final String sentTo = email;
+                public final String sentTo = userEmail;
             });
             
         } catch (RuntimeException e) {
+            logger.error("Failed to send email for note ID {}: {}", id, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new Object() {
                 public final String error = "Failed to send email";
                 public final String message = e.getMessage();

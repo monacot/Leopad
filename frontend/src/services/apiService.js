@@ -74,11 +74,9 @@ const apiService = {
     return response.data
   },
 
-  // Email a note
-  async emailNote(id, email) {
-    const response = await api.post(`/api/notes/${id}/email`, { 
-      toEmail: email 
-    })
+  // Email a note (sends to authenticated user's email)
+  async emailNote(id) {
+    const response = await api.post(`/api/notes/${id}/send-email`)
     return response.data
   },
 

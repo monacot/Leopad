@@ -137,13 +137,14 @@ function Dashboard({ user }) {
       return
     }
 
-    const email = prompt('Enter email address to send this note:')
-    if (!email) return
+    if (!confirm('Send this note to your email address?')) {
+      return
+    }
 
     try {
       setSaving(true)
-      await apiService.emailNote(selectedNote.id, email)
-      alert('Note sent successfully!')
+      await apiService.emailNote(selectedNote.id)
+      alert(`Note sent successfully to ${user.email}!\n\nPlease check your inbox and spam folder.`)
     } catch (error) {
       setError('Failed to send note: ' + error.message)
     } finally {
