@@ -11,6 +11,8 @@ function Dashboard({ user }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [isFavorite, setIsFavorite] = useState(false)
+  const [showingFavorites, setShowingFavorites] = useState(false)
 
   useEffect(() => {
     loadNotes()
@@ -21,10 +23,32 @@ function Dashboard({ user }) {
       setLoading(true)
       const fetchedNotes = await apiService.getNotes()
       setNotes(fetchedNotes)
+      setShowingFavorites(false)
     } catch (error) {
       setError('Failed to load notes: ' + error.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadFavoriteNotes = async () => {
+    try {
+      setLoading(true)
+      const favoriteNotes = await apiService.getFavoriteNotes()
+      setNotes(favoriteNotes)
+      setShowingFavorites(true)
+    } catch (error) {
+      setError('Failed to load favorite notes: ' + error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleToggleFavorites = async () => {
+    if (showingFavorites) {
+      await loadNotes()
+    } else {
+      await loadFavoriteNotes()
     }
   }
 
@@ -40,12 +64,14 @@ function Dashboard({ user }) {
     setSelectedNote(note)
     setNoteTitle(note.title)
     setNoteContent(note.content)
+    setIsFavorite(note.isFavorite || false)
   }
 
   const handleNewNote = () => {
     setSelectedNote(null)
     setNoteTitle('')
     setNoteContent('')
+    setIsFavorite(false)
   }
 
   const handleSave = async () => {
@@ -60,7 +86,8 @@ function Dashboard({ user }) {
       
       const noteData = {
         title: noteTitle,
-        content: noteContent
+        content: noteContent,
+        isFavorite: isFavorite
       }
 
       if (selectedNote) {
@@ -70,11 +97,13 @@ function Dashboard({ user }) {
           note.id === selectedNote.id ? updatedNote : note
         ))
         setSelectedNote(updatedNote)
+        setIsFavorite(updatedNote.isFavorite || false)
       } else {
         // Create new note
         const newNote = await apiService.createNote(noteData)
         setNotes([newNote, ...notes])
         setSelectedNote(newNote)
+        setIsFavorite(newNote.isFavorite || false)
       }
     } catch (error) {
       setError('Failed to save note: ' + error.message)
@@ -139,15 +168,26 @@ function Dashboard({ user }) {
       <div className="dashboard-content">
         <div className="notes-sidebar">
           <div className="sidebar-header">
-            <h3>Your Notes</h3>
-            <button onClick={handleNewNote} className="new-note-button">
-              + New Note
-            </button>
+            <h3>{showingFavorites ? 'Favorite Notes' : 'Your Notes'}</h3>
+            <div className="sidebar-actions">
+              <button onClick={handleNewNote} className="new-note-button">
+                + New Note
+              </button>
+              <button 
+                onClick={handleToggleFavorites} 
+                className={`favorites-button ${showingFavorites ? 'active' : ''}`}
+                title={showingFavorites ? 'Show all notes' : 'Show favorites only'}
+              >
+                {showingFavorites ? 'All Notes' : 'Favorites'}
+              </button>
+            </div>
           </div>
           
           <div className="notes-list">
             {notes.length === 0 ? (
-              <p className="no-notes">No notes yet. Create your first note!</p>
+              <p className="no-notes">
+                {showingFavorites ? 'No favorite notes yet. Star some notes to see them here!' : 'No notes yet. Create your first note!'}
+              </p>
             ) : (
               notes.map(note => (
                 <div
@@ -155,7 +195,10 @@ function Dashboard({ user }) {
                   className={`note-item ${selectedNote?.id === note.id ? 'selected' : ''}`}
                   onClick={() => handleNoteSelect(note)}
                 >
-                  <h4>{note.title}</h4>
+                  <div className="note-item-header">
+                    <h4>{note.title}</h4>
+                    {note.isFavorite && <span className="favorite-star">★</span>}
+                  </div>
                   <p>{note.content.substring(0, 100)}...</p>
                   <small>{new Date(note.createdAt).toLocaleDateString()}</small>
                 </div>
@@ -175,6 +218,14 @@ function Dashboard({ user }) {
             />
             
             <div className="editor-actions">
+              <button
+                onClick={() => setIsFavorite(!isFavorite)}
+                className={`favorite-toggle ${isFavorite ? 'favorited' : ''}`}
+                title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                {isFavorite ? '★' : '☆'}
+              </button>
+              
               <button 
                 onClick={handleSave} 
                 disabled={saving}

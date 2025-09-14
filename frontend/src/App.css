@@ -211,6 +211,36 @@
   color: #fff;
 }
 
+.sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.favorites-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.favorites-button:hover {
+  background-color: #218838;
+}
+
+.favorites-button.active {
+  background-color: #17a2b8;
+}
+
+.favorites-button.active:hover {
+  background-color: #138496;
+}
+
 .new-note-button {
   background-color: #28a745;
   color: white;
@@ -429,6 +459,69 @@
   }
 }
 
+/* Favorite functionality styles */
+.note-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.favorite-star {
+  color: #ffd700;
+  font-size: 1rem;
+  margin-left: 0.5rem;
+}
+
+.favorite-toggle {
+  background: none;
+  border: 2px solid #333;
+  color: #ccc;
+  font-size: 1.2rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.favorite-toggle:hover {
+  border-color: #ffd700;
+  color: #ffd700;
+  transform: scale(1.1);
+}
+
+.favorite-toggle.favorited {
+  border-color: #ffd700;
+  color: #ffd700;
+  background-color: rgba(255, 215, 0, 0.1);
+}
+
+.favorite-toggle.favorited:hover {
+  background-color: rgba(255, 215, 0, 0.2);
+}
+
+/* Light mode adjustments for favorites */
+@media (prefers-color-scheme: light) {
+  .favorite-toggle {
+    border-color: #ced4da;
+    color: #666;
+  }
+  
+  .favorite-toggle:hover {
+    border-color: #ffd700;
+    color: #ffd700;
+  }
+  
+  .favorite-toggle.favorited {
+    border-color: #ffd700;
+    color: #ffd700;
+    background-color: rgba(255, 215, 0, 0.1);
+  }
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .dashboard-content {
@@ -442,5 +535,11 @@
   
   .note-editor {
     flex: 1;
+  }
+  
+  .favorite-toggle {
+    width: 2rem;
+    height: 2rem;
+    font-size: 1rem;
   }
 }

@@ -68,6 +68,12 @@ const apiService = {
     await api.delete(`/api/notes/${id}`)
   },
 
+  // Get favorite notes for the authenticated user
+  async getFavoriteNotes() {
+    const response = await api.get('/api/notes/favorites')
+    return response.data
+  },
+
   // Email a note
   async emailNote(id, email) {
     const response = await api.post(`/api/notes/${id}/email`, { 
