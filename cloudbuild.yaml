@@ -1,23 +1,43 @@
-# Google Cloud Build configuration for Cloud Run deployment
+# Google Cloud Build configuration for two-service Cloud Run deployment
 steps:
-  # Build the Docker image
+  # Build the Backend Docker image
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'build',
-      '-t', 'gcr.io/$PROJECT_ID/notepad-app:latest',
-      '.'
+      '-t', 'gcr.io/$PROJECT_ID/notepad-backend:latest',
+      './backend'
     ]
 
-  # Push the Docker image to Google Container Registry
+  # Build the Frontend Docker image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/notepad-app:latest']
+    args: [
+      'build',
+      '-t', 'gcr.io/$PROJECT_ID/notepad-frontend:latest',
+      '--target', 'production',
+      '--build-arg', 'VITE_FIREBASE_API_KEY=${_VITE_FIREBASE_API_KEY}',
+      '--build-arg', 'VITE_FIREBASE_AUTH_DOMAIN=${_VITE_FIREBASE_AUTH_DOMAIN}',
+      '--build-arg', 'VITE_FIREBASE_PROJECT_ID=${_VITE_FIREBASE_PROJECT_ID}',
+      '--build-arg', 'VITE_FIREBASE_STORAGE_BUCKET=${_VITE_FIREBASE_STORAGE_BUCKET}',
+      '--build-arg', 'VITE_FIREBASE_MESSAGING_SENDER_ID=${_VITE_FIREBASE_MESSAGING_SENDER_ID}',
+      '--build-arg', 'VITE_FIREBASE_APP_ID=${_VITE_FIREBASE_APP_ID}',
+      '--build-arg', 'VITE_API_BASE_URL=https://notepad-backend-${_BACKEND_HASH}.europe-west1.run.app',
+      './frontend'
+    ]
 
-  # Deploy to Cloud Run
+  # Push Backend image to Google Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/notepad-backend:latest']
+
+  # Push Frontend image to Google Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/notepad-frontend:latest']
+
+  # Deploy Backend to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args: [
-      'run', 'deploy', 'notepad-app',
-      '--image', 'gcr.io/$PROJECT_ID/notepad-app:latest',
+      'run', 'deploy', 'notepad-backend',
+      '--image', 'gcr.io/$PROJECT_ID/notepad-backend:latest',
       '--region', 'europe-west1',
       '--platform', 'managed',
       '--allow-unauthenticated',
@@ -33,17 +53,47 @@ steps:
       '--set-env-vars', 'FROM_EMAIL=${_FROM_EMAIL}',
       '--set-env-vars', 'FIREBASE_SERVICE_ACCOUNT_KEY_B64=${_FIREBASE_SERVICE_ACCOUNT_KEY_B64}',
       '--set-env-vars', 'SHOW_SQL=false',
-      '--set-env-vars', 'LOG_LEVEL=INFO'
+      '--set-env-vars', 'LOG_LEVEL=INFO',
+      '--set-env-vars', 'CORS_ALLOWED_ORIGINS=https://notepad-frontend-${_FRONTEND_HASH}.europe-west1.run.app'
+    ]
+
+  # Deploy Frontend to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args: [
+      'run', 'deploy', 'notepad-frontend',
+      '--image', 'gcr.io/$PROJECT_ID/notepad-frontend:latest',
+      '--region', 'europe-west1',
+      '--platform', 'managed',
+      '--allow-unauthenticated',
+      '--port', '80',
+      '--memory', '512Mi',
+      '--cpu', '1',
+      '--concurrency', '100',
+      '--max-instances', '5',
     ]
 
 # Configure environment variables as substitutions (set these in Cloud Build triggers)
 substitutions:
+  # Backend environment variables
   _DATABASE_URL: 'jdbc:postgresql://your-supabase-host:6543/postgres'
   _DATABASE_USERNAME: 'postgres.your_project_ref'
   _DATABASE_PASSWORD: 'your_database_password'
   _SENDGRID_API_KEY: 'SG.your_sendgrid_api_key_here'
   _FROM_EMAIL: 'your_email@domain.com'
   _FIREBASE_SERVICE_ACCOUNT_KEY_B64: 'your_base64_encoded_firebase_service_account_json'
+
+  # Frontend environment variables (Firebase config for React)
+  _VITE_FIREBASE_API_KEY: 'your_firebase_api_key'
+  _VITE_FIREBASE_AUTH_DOMAIN: 'your-project.firebaseapp.com'
+  _VITE_FIREBASE_PROJECT_ID: 'your-project-id'
+  _VITE_FIREBASE_STORAGE_BUCKET: 'your-project.firebasestorage.app'
+  _VITE_FIREBASE_MESSAGING_SENDER_ID: 'your_messaging_sender_id'
+  _VITE_FIREBASE_APP_ID: 'your_app_id'
+
+  # Cloud Run service URL hashes (these need to be updated after first deployment)
+  _FRONTEND_HASH: 'FROONT_END_HASH'
+  _BACKEND_HASH: 'BACK_END_HASH'
 
 # Specify timeout and machine type
 options:
@@ -54,4 +104,5 @@ options:
 timeout: '1800s'
 
 images:
-  - 'gcr.io/$PROJECT_ID/notepad-app:latest'
+  - 'gcr.io/$PROJECT_ID/notepad-backend:latest'
+  - 'gcr.io/$PROJECT_ID/notepad-frontend:latest'

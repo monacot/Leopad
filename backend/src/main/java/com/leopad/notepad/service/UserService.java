@@ -72,8 +72,33 @@ public class UserService {
             return userRepository.save(user);
         }
 
-        // Create new user
-        logger.info("Creating new user with Firebase UID: {}", firebaseUid);
-        return createUserWithFirebaseUid(firebaseUid, email, name);
+        // Create new user with race condition handling
+        try {
+            logger.info("Creating new user with Firebase UID: {}", firebaseUid);
+            return createUserWithFirebaseUid(firebaseUid, email, name);
+        } catch (Exception e) {
+            // Handle race condition: another thread may have created the user between our checks
+            if (e.getCause() instanceof org.hibernate.exception.ConstraintViolationException ||
+                e.getMessage().contains("duplicate key value violates unique constraint")) {
+                
+                logger.warn("Race condition detected - user created by another thread. Retrying lookup for email: {}", email);
+                
+                // Retry: Check again by email in case another thread created the user
+                Optional<User> raceUser = userRepository.findByEmail(email);
+                if (raceUser.isPresent()) {
+                    logger.info("Found user created by another thread, updating with Firebase UID: {}", firebaseUid);
+                    User user = raceUser.get();
+                    user.setFirebaseUid(firebaseUid);
+                    if (name != null && !name.isEmpty()) {
+                        user.setName(name);
+                    }
+                    return userRepository.save(user);
+                }
+            }
+            
+            // Re-throw if it's not a race condition we can handle
+            logger.error("Unexpected error creating user with Firebase UID: {}", firebaseUid, e);
+            throw e;
+        }
     }
 }
