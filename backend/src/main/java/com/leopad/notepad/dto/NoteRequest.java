@@ -9,7 +9,6 @@ public class NoteRequest {
     @Size(max = 200, message = "Title must not exceed 200 characters")
     private String title;
 
-    @NotBlank(message = "Content is required")
     @Size(max = 10000, message = "Content must not exceed 10,000 characters")
     private String content;
 

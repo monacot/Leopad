@@ -19,7 +19,6 @@ public class Note {
     @Column(nullable = false)
     private String title;
 
-    @NotBlank(message = "Content is required")
     @Size(max = 10000, message = "Content must not exceed 10,000 characters")
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;

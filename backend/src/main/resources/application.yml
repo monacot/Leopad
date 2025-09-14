@@ -29,6 +29,10 @@ sendgrid:
 firebase:
   service-account-key-b64: ${FIREBASE_SERVICE_ACCOUNT_KEY_B64:}
 
+# CORS configuration
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
 # Logging configuration
 logging:
   level:

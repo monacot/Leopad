@@ -7,13 +7,18 @@ import com.leopad.notepad.entity.User;
 import com.leopad.notepad.service.EmailService;
 import com.leopad.notepad.service.NoteService;
 import com.leopad.notepad.service.UserService;
+import com.leopad.notepad.service.FirebaseAuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import com.google.firebase.auth.FirebaseToken;
 
 import java.util.List;
 import java.util.Optional;
@@ -34,14 +39,53 @@ public class NoteController {
     @Autowired
     private EmailService emailService;
 
-    // For now, we'll use a hardcoded user until authentication is implemented
-    private User getDefaultUser() {
-        return userService.findOrCreateUser("demo@notepad.com", "Demo User");
+    @Autowired
+    private FirebaseAuthService firebaseAuthService;
+
+    private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("User not authenticated");
+        }
+        
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String firebaseUid = userDetails.getUsername(); // This is the Firebase UID
+        
+        // Get the Firebase token from the authentication credentials
+        FirebaseToken firebaseToken = (FirebaseToken) authentication.getCredentials();
+        
+        logger.debug("Getting current user for Firebase UID: {} with email: {}", firebaseUid, firebaseToken.getEmail());
+        
+        try {
+            // First try to find existing user by Firebase UID
+            User user = userService.findByFirebaseUid(firebaseUid);
+            if (user != null) {
+                logger.debug("Found existing user: {}", user.getEmail());
+                return user;
+            }
+            
+            // If user doesn't exist, create it using Firebase token data
+            String email = firebaseToken.getEmail();
+            String name = firebaseToken.getName();
+            if (name == null || name.isEmpty()) {
+                name = email.split("@")[0]; // Use email prefix as default name
+            }
+            
+            logger.info("Creating new user from Firebase token - UID: {}, email: {}, name: {}", firebaseUid, email, name);
+            user = userService.findOrCreateUserByFirebaseUid(firebaseUid, email, name);
+            
+            return user;
+            
+        } catch (Exception e) {
+            logger.error("Error getting current user: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to get current user", e);
+        }
     }
 
     @GetMapping
     public ResponseEntity<List<NoteResponse>> getAllNotes() {
-        User user = getDefaultUser();
+        User user = getCurrentUser();
         logger.info("Fetching all notes for user: {}", user.getEmail());
         List<Note> notes = noteService.findAllByUser(user);
         logger.debug("Found {} notes for user: {}", notes.size(), user.getEmail());
@@ -53,7 +97,7 @@ public class NoteController {
 
     @GetMapping("/{id}")
     public ResponseEntity<NoteResponse> getNoteById(@PathVariable Long id) {
-        User user = getDefaultUser();
+        User user = getCurrentUser();
         Optional<Note> note = noteService.findByIdAndUser(id, user);
         
         if (note.isPresent()) {
@@ -65,7 +109,7 @@ public class NoteController {
 
     @PostMapping
     public ResponseEntity<NoteResponse> createNote(@Valid @RequestBody NoteRequest request) {
-        User user = getDefaultUser();
+        User user = getCurrentUser();
         logger.info("Creating new note for user: {} with title: '{}'", user.getEmail(), request.getTitle());
         Note note = noteService.createNote(request, user);
         logger.info("Successfully created note with ID: {} for user: {}", note.getId(), user.getEmail());
@@ -75,7 +119,7 @@ public class NoteController {
     @PutMapping("/{id}")
     public ResponseEntity<NoteResponse> updateNote(@PathVariable Long id, @Valid @RequestBody NoteRequest request) {
         try {
-            User user = getDefaultUser();
+            User user = getCurrentUser();
             Note note = noteService.updateNote(id, request, user);
             return ResponseEntity.ok(new NoteResponse(note));
         } catch (RuntimeException e) {
@@ -86,7 +130,7 @@ public class NoteController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteNote(@PathVariable Long id) {
         try {
-            User user = getDefaultUser();
+            User user = getCurrentUser();
             noteService.deleteNote(id, user);
             return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
@@ -96,7 +140,7 @@ public class NoteController {
 
     @GetMapping("/search")
     public ResponseEntity<List<NoteResponse>> searchNotes(@RequestParam String keyword) {
-        User user = getDefaultUser();
+        User user = getCurrentUser();
         List<Note> notes = noteService.searchNotes(keyword, user);
         List<NoteResponse> response = notes.stream()
                 .map(NoteResponse::new)
@@ -106,7 +150,7 @@ public class NoteController {
 
     @GetMapping("/favorites")
     public ResponseEntity<List<NoteResponse>> getFavoriteNotes() {
-        User user = getDefaultUser();
+        User user = getCurrentUser();
         List<Note> notes = noteService.findFavoritesByUser(user);
         List<NoteResponse> response = notes.stream()
                 .map(NoteResponse::new)
@@ -116,7 +160,7 @@ public class NoteController {
 
     @GetMapping("/stats")
     public ResponseEntity<Object> getUserStats() {
-        User user = getDefaultUser();
+        User user = getCurrentUser();
         long totalNotesCount = noteService.countByUser(user);
         long favoriteNotesCount = noteService.findFavoritesByUser(user).size();
         
@@ -130,7 +174,7 @@ public class NoteController {
     @PostMapping("/{id}/send-email")
     public ResponseEntity<Object> sendNoteByEmail(@PathVariable Long id, @RequestParam String email) {
         try {
-            User user = getDefaultUser();
+            User user = getCurrentUser();
             Optional<Note> noteOpt = noteService.findByIdAndUser(id, user);
             
             if (noteOpt.isEmpty()) {

@@ -51,9 +51,9 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
                     .authorities(new ArrayList<>()) // You can add roles/authorities here if needed
                     .build();
 
-                // Create authentication token
+                // Create authentication token and add Firebase token as details
                 UsernamePasswordAuthenticationToken authentication = 
-                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    new UsernamePasswordAuthenticationToken(userDetails, firebaseToken, userDetails.getAuthorities());
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 // Set authentication in security context
