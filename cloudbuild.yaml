@@ -1,4 +1,5 @@
 # Google Cloud Build configuration for two-service Cloud Run deployment
+# NOTE: This is a template with placeholder values. Replace all values in the substitutions section with your actual credentials.
 steps:
   # Build the Backend Docker image
   - name: 'gcr.io/cloud-builders/docker'
