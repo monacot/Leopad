@@ -17,10 +17,8 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
     
     List<Note> findByUserAndIsFavoriteOrderByCreatedAtDesc(User user, Boolean isFavorite);
     
-    @Query("SELECT n FROM Note n WHERE n.user = :user AND (n.title LIKE %:keyword% OR n.content LIKE %:keyword%) ORDER BY n.createdAt DESC")
+    @Query("SELECT n FROM Note n WHERE n.user = :user AND (LOWER(n.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(n.content) LIKE LOWER(CONCAT('%', :keyword, '%'))) ORDER BY n.createdAt DESC")
     List<Note> findByUserAndTitleContainingOrContentContaining(@Param("user") User user, @Param("keyword") String keyword);
     
     Optional<Note> findByIdAndUser(Long id, User user);
-    
-    long countByUser(User user);
 }

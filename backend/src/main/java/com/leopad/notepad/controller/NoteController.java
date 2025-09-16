@@ -158,18 +158,6 @@ public class NoteController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/stats")
-    public ResponseEntity<Object> getUserStats() {
-        User user = getCurrentUser();
-        long totalNotesCount = noteService.countByUser(user);
-        long favoriteNotesCount = noteService.findFavoritesByUser(user).size();
-        
-        return ResponseEntity.ok(new Object() {
-            public final String userEmail = user.getEmail();
-            public final long totalNotes = totalNotesCount;
-            public final long favoriteNotes = favoriteNotesCount;
-        });
-    }
 
     @PostMapping("/{id}/send-email")
     public ResponseEntity<Object> sendNoteByEmail(@PathVariable Long id) {

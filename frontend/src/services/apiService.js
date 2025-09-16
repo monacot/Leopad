@@ -74,6 +74,12 @@ const apiService = {
     return response.data
   },
 
+  // Search notes by keyword
+  async searchNotes(keyword) {
+    const response = await api.get(`/api/notes/search?keyword=${encodeURIComponent(keyword)}`)
+    return response.data
+  },
+
   // Email a note (sends to authenticated user's email)
   async emailNote(id) {
     const response = await api.post(`/api/notes/${id}/send-email`)

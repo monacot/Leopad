@@ -65,7 +65,4 @@ public class NoteService {
         return noteRepository.findByUserAndIsFavoriteOrderByCreatedAtDesc(user, true);
     }
 
-    public long countByUser(User user) {
-        return noteRepository.countByUser(user);
-    }
 }

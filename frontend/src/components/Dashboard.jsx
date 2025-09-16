@@ -13,6 +13,9 @@ function Dashboard({ user }) {
   const [saving, setSaving] = useState(false)
   const [isFavorite, setIsFavorite] = useState(false)
   const [showingFavorites, setShowingFavorites] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [searchedTerm, setSearchedTerm] = useState('')
+  const [isSearching, setIsSearching] = useState(false)
 
   useEffect(() => {
     loadNotes()
@@ -24,6 +27,9 @@ function Dashboard({ user }) {
       const fetchedNotes = await apiService.getNotes()
       setNotes(fetchedNotes)
       setShowingFavorites(false)
+      setIsSearching(false)
+      setSearchTerm('')
+      setSearchedTerm('')
     } catch (error) {
       setError('Failed to load notes: ' + error.message)
     } finally {
@@ -37,6 +43,9 @@ function Dashboard({ user }) {
       const favoriteNotes = await apiService.getFavoriteNotes()
       setNotes(favoriteNotes)
       setShowingFavorites(true)
+      setIsSearching(false)
+      setSearchTerm('')
+      setSearchedTerm('')
     } catch (error) {
       setError('Failed to load favorite notes: ' + error.message)
     } finally {
@@ -49,6 +58,38 @@ function Dashboard({ user }) {
       await loadNotes()
     } else {
       await loadFavoriteNotes()
+    }
+  }
+
+  const handleSearch = async (keyword) => {
+    if (!keyword.trim()) {
+      await loadNotes()
+      return
+    }
+
+    try {
+      setLoading(true)
+      const searchResults = await apiService.searchNotes(keyword)
+      setNotes(searchResults)
+      setShowingFavorites(false)
+      setIsSearching(true)
+      setSearchedTerm(keyword)
+    } catch (error) {
+      setError('Failed to search notes: ' + error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value)
+  }
+
+  const handleSearchClick = () => {
+    if (searchTerm.trim()) {
+      handleSearch(searchTerm)
+    } else {
+      loadNotes()
     }
   }
 
@@ -169,25 +210,53 @@ function Dashboard({ user }) {
       <div className="dashboard-content">
         <div className="notes-sidebar">
           <div className="sidebar-header">
-            <h3>{showingFavorites ? 'Favorite Notes' : 'Your Notes'}</h3>
+            <h3>
+              {isSearching ? (
+                <>
+                  <span style={{ fontSize: '0.8em', color: '#666' }}>
+                    Search Results for "{searchedTerm}"
+                  </span>
+                </>
+              ) : showingFavorites ? 'Favorite Notes' : 'Your Notes'}
+            </h3>
             <div className="sidebar-actions">
               <button onClick={handleNewNote} className="new-note-button">
                 + New Note
               </button>
-              <button 
-                onClick={handleToggleFavorites} 
+              <button
+                onClick={handleToggleFavorites}
                 className={`favorites-button ${showingFavorites ? 'active' : ''}`}
                 title={showingFavorites ? 'Show all notes' : 'Show favorites only'}
               >
                 {showingFavorites ? 'All Notes' : 'Favorites'}
               </button>
+              <button
+                onClick={handleSearchClick}
+                disabled={loading}
+                className="new-note-button"
+              >
+                Search
+              </button>
             </div>
+          </div>
+
+          <div className="search-section">
+            <input
+              type="text"
+              placeholder="Search notes..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearchClick()}
+              className="search-input"
+            />
           </div>
           
           <div className="notes-list">
             {notes.length === 0 ? (
               <p className="no-notes">
-                {showingFavorites ? 'No favorite notes yet. Star some notes to see them here!' : 'No notes yet. Create your first note!'}
+                {isSearching ? `No notes found for "${searchedTerm}"` :
+                 showingFavorites ? 'No favorite notes yet. Star some notes to see them here!' :
+                 'No notes yet. Create your first note!'}
               </p>
             ) : (
               notes.map(note => (
